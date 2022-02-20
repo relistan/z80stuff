@@ -1,18 +1,34 @@
-; Hello world on CP/M with z80 assembly
-;     For assembly with sjasmplus
+; Fancy Hello world on CP/M with z80 assembly
+; 
+; Assembler: sjasmplus (https://github.com/z00m128/sjasmplus)
+; Debugging: ZSID (http://www.retroarchive.org/cpm/lang/lang.htm)
 ;
 ; Karl Matthias -- 2022-02-19
 
 BDOS  equ 5
 
-  org 0100h
-  jr start
+  org   0100h
+  jp    start
 
-msg: BYTE "\r\nHello, World!\r\n",255
+; ------------------------------------------------------------------------------
+; DATA
+; ------------------------------------------------------------------------------
+msg: BYTE "\r\n Hello, World!\r\n",255
 
 ; Color code will have the color segment overwritten when set_color
 ; is called.
-color_code: BYTE 27,"[38;5;000m",255
+color_code:     BYTE 27,"[38;5;000m",255
+term_reset:     BYTE 27,"c",255
+clrscrn:        BYTE 27,"[2J",255
+back_black:     BYTE 27,"[48;5;0m",255
+back_white:     BYTE 27,"[48;5;15m",255
+color_intense:  BYTE 27,"[1m",255
+color_normal:   BYTE 27,"[0m",255
+; ------------------------------------------------------------------------------
+
+; ------------------------------------------------------------------------------
+; FUNCTIONS
+; ------------------------------------------------------------------------------
 
 ; Stores an ASCII representation of the number in HL into the
 ; memory pointed to by IX.
@@ -70,46 +86,97 @@ print_string:
   call  BDOS
   ret
 
-draw_color_bar:
-  ld    a, 87         ; Starting color - 1
+; Draw a color bar starting from 16, up to 196
+color_bar_up:
+  ld    a, -20         ; Starting color - 36
 .loop:
-  inc   a
+  add   a, 36
   ld    l, a
   push  af
   call  set_color
   ld    e, '='
   call  print_char
   pop   af
-  ld    b, 100         ; Ending color
+  ld    b, 196         ; Ending color
   cp    b
   jr    nz, .loop
+  ret
+
+; Draw a color bar starting from 196, down to 16
+color_bar_down:
+  ld    a, 232         ; Starting color + 36
+.loop:
+  add   a, -36
+  ld    l, a
+  push  af
+  call  set_color
+  ld    e, '='
+  call  print_char
+  pop   af
+  ld    b, 16          ; Ending color
+  cp    b
+  jr    nz, .loop
+  ret
+
+; Set up the terminal screen
+set_up_screen:
+  ld    de, term_reset
+  call  print_string
+
+  ld    de, color_intense   ; Turn on color intensity
+  call  print_string
+
+  ld    de, back_black
+  call  print_string
+
+  ld    de, clrscrn
+  call  print_string
+  ret
+
+reset_screen:
+  ld    hl, 60
+  call  set_color           ; Reset color before exiting
+
+  ld    de, color_normal
+  call  print_string
   ret
 
 ; BDOS call to exit and return to CP
 ; No args
 reset:
-  ld    c, 0          ; CP/M system reset call - shut down
+  ld    c, 0                ; CP/M system reset call - shut down
   call  BDOS
   
+; ------------------------------------------------------------------------------
+; MAIN
+; ------------------------------------------------------------------------------
 start:
-  call  set_string_delimiter  ; $ is a dumb string delimiter
+  call  set_string_delimiter  ; $ is a dumb string delimiter, use 255
+  call  set_up_screen
 
-  ld    e, '-'
-  call  print_char    ; Print the character '-'
+  ld    e, ' '
+  call  print_char          ; Print the character '-'
 
-  ld    hl, 25
+  call  color_bar_up        ; Draw color bars
+  call  color_bar_down
+
+  ld    hl, 25              ; Set color 25
   call  set_color
 
-  ld    e, '-'
-  call  print_char    ; Print the character '-'
+  ld    de, msg             ; Hello World!
+  call  print_string
 
-  ld    de, msg
-  call  print_string  ; Print the msg string
+  ld    e, ' '
+  call  print_char          ; Print the character '-'
 
-  call  draw_color_bar
+  call  color_bar_up        ; Draw color bars
+  call  color_bar_down
 
-  ld    hl, 60
-  call  set_color     ; Reset color before exiting
+  ld    e, "\n"
+  call  print_char 
+  ld    e, "\n"
+  call  print_char
 
+  call  reset_screen
   call  reset  
-  halt                ; This code is never reached
+  halt                      ; This code is never reached
