@@ -6,12 +6,13 @@
 BDOS  equ 5
 
   org 0100h
-
   jr start
 
-msg: BYTE "\r\nHello, World!\r\n$"
+msg: BYTE "\r\nHello, World!\r\n",255
 
-color_code: BYTE 27,"[38;5;000m$"
+; Color code will have the color segment overwritten when set_color
+; is called.
+color_code: BYTE 27,"[38;5;000m",255
 
 ; Stores an ASCII representation of the number in HL into the
 ; memory pointed to by IX.
@@ -46,6 +47,14 @@ set_color:
   call  hl_itoa
   ld    de, color_code
   call  print_string
+  ret
+
+; BDOS call to set the string delimiter to 255 instead of '$'
+set_string_delimiter:
+  ld    e, 255
+  ld    c, 6Eh
+  call  BDOS
+  ret
 
 ; BDOS call to print a character to console
 ; e must contain the char to print
@@ -68,14 +77,16 @@ reset:
   call  BDOS
   
 start:
-  ld    e, '-'
-  call  print_char    ; Print the letter 'k'
+  call  set_string_delimiter  ; $ is a dumb string delimiter
 
-  ld    hl, 60
+  ld    e, '-'
+  call  print_char    ; Print the character '-'
+
+  ld    hl, 25
   call  set_color
 
   ld    e, '-'
-  call  print_char    ; Print the letter 'k'
+  call  print_char    ; Print the character '-'
 
   ld    de, msg
   call  print_string  ; Print the msg string
