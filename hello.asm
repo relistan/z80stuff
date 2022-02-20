@@ -120,6 +120,8 @@ color_bar_down:
   ret
 
 ; Set up the terminal screen
+; Destroys
+;	de
 set_up_screen:
   ld    de, term_reset
   call  print_string
@@ -134,6 +136,9 @@ set_up_screen:
   call  print_string
   ret
 
+; Reset the screen and colors
+; Destroys
+; 	hl de
 reset_screen:
   ld    hl, 60
   call  set_color           ; Reset color before exiting
@@ -156,7 +161,7 @@ start:
   call  set_up_screen
 
   ld    e, ' '
-  call  print_char          ; Print the character '-'
+  call  print_char
 
   call  color_bar_up        ; Draw color bars
   call  color_bar_down
@@ -168,7 +173,7 @@ start:
   call  print_string
 
   ld    e, ' '
-  call  print_char          ; Print the character '-'
+  call  print_char
 
   call  color_bar_up        ; Draw color bars
   call  color_bar_down
