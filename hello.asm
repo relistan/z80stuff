@@ -66,10 +66,25 @@ print_char:
 ; BDOS call to print a string to console
 ; de must contain address of string, terminated with $
 print_string:
-  ld    c, 9          ; CP/M write string to console call
+  ld    c, 9           ; CP/M write string to console call
   call  BDOS
   ret
-  
+
+draw_color_bar:
+  ld    a, 87         ; Starting color - 1
+.loop:
+  inc   a
+  ld    l, a
+  push  af
+  call  set_color
+  ld    e, '='
+  call  print_char
+  pop   af
+  ld    b, 100         ; Ending color
+  cp    b
+  jr    nz, .loop
+  ret
+
 ; BDOS call to exit and return to CP
 ; No args
 reset:
@@ -90,6 +105,11 @@ start:
 
   ld    de, msg
   call  print_string  ; Print the msg string
+
+  call  draw_color_bar
+
+  ld    hl, 60
+  call  set_color     ; Reset color before exiting
 
   call  reset  
   halt                ; This code is never reached
