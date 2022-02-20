@@ -1,4 +1,5 @@
 ; Fancy Hello world on CP/M with z80 assembly
+;   -- requires a 256 color terminal, which should be no issue in 2022
 ; 
 ; Assembler: sjasmplus (https://github.com/z00m128/sjasmplus)
 ; Debugging: ZSID (http://www.retroarchive.org/cpm/lang/lang.htm)
