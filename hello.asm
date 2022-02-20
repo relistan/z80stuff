@@ -51,7 +51,7 @@ hl_itoa:
 
   sbc   hl, de    ; add the value back when we did roll over
   inc   ix        ; increment ix
-  ld    (ix+0), a ; store the value of a at address of ix
+  ld    (ix), a   ; store the value of a at address of ix
   ret
 
 ; Sets the screen color by echoing an ANSI color code to the terminal
