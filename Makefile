@@ -1,4 +1,4 @@
-all:
+all: build
 
 build:
 	@../sjasmplus/sjasmplus hello.asm --lst --raw=hello.bin
