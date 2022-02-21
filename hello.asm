@@ -28,6 +28,10 @@ back_white:     BYTE 27,"[48;5;15m",255
 color_intense:  BYTE 27,"[1m",255
 color_normal:   BYTE 27,"[0m",255
 
+; Color bar configuration
+bar_up:         BYTE 16,196,36,'=' 
+bar_down:       BYTE 196,16,-36,'='
+
 ; ------------------------------------------------------------------------------
 ; FUNCTIONS
 ; ------------------------------------------------------------------------------
@@ -88,66 +92,45 @@ print_string:
   call  BDOS
   ret
 
-; Draw a color bar starting from 16, up to 196
-color_bar_up:
-  ld    a, -20         ; Starting color - 36
-.loop:
-  add   a, 36
-  ld    l, a
-  push  af
-  call  set_color
-  ld    e, '='
-  call  print_char
-  pop   af
-  ld    b, 196         ; Ending color
-  cp    b
-  jr    nz, .loop
-  ret
-
-; Draw a color bar starting from 196, down to 16
-color_bar_down:
-  ld    a, 232         ; Starting color + 36
-.loop:
-  add   a, -36
-  ld    l, a
-  push  af
-  call  set_color
-  ld    e, '='
-  call  print_char
-  pop   af
-  ld    b, 16          ; Ending color
-  cp    b
-  jr    nz, .loop
-  ret
-
+; ------------------------------------------------------------------------------
 ; Draw a color bar at current position
-;	iy = block of args
-; 		0 = starting color
-; 		1 = increment
-; 		2 = ending color
-; 		3 = character to draw
+;    iy = block of args
+;         0 = starting color
+;         1 = ending color
+;         2 = increment
+;         3 = character to draw
 color_bar:
-  sub   c				; add -36 (sub)
+  ld    a, (iy)
+  sub   (iy+2)
 .loop:
-  add   c				; sub -36 (add)
-  ld    l, a			; store 196 into l
-  push  af				; push a and flags onto stack
-  push	bc
-  push	de
-  call  set_color		; set the color
-  pop	de
-  push	de
-  call  print_char		; print e
-  pop	de
-  pop	bc
-  pop   af				; restore a and flags
-  cp    b 				; compare a to 16
+  add   (iy+2)     ; sub -36 (add)
+  push  af
+
+  ld    l, a       ; store 196 into l
+  call  set_color  ; set the color
+
+  ld    de, (iy+3) ; put '=' into e
+  call  print_char ; print e
+
+  pop   af
+  ld    b, (iy+1)  ; put 16 into b
+  cp    b          ; compare a to 16
   jr    nz, .loop
   ret
+
+; Wrappers to load up the right place from memory
+color_bar_up:
+  ld  iy, bar_up
+  jr color_bar
+
+color_bar_down:
+  ld iy, bar_down
+  jr color_bar
+; ------------------------------------------------------------------------------
 
 ; Set up the terminal screen
 ; Destroys
-;	de
+;    de
 set_up_screen:
   ld    de, term_reset
   call  print_string
@@ -164,7 +147,7 @@ set_up_screen:
 
 ; Reset the screen and colors
 ; Destroys
-; 	hl de
+;     hl de
 reset_screen:
   ld    hl, 60
   call  set_color           ; Reset color before exiting
@@ -184,37 +167,30 @@ reset:
 ; ------------------------------------------------------------------------------
 start:
   call  set_string_delimiter  ; $ is a dumb string delimiter, use 255
-;  call  set_up_screen
+  call  set_up_screen
 
-  ld    a, 196
-  ld    b, 16
-  ld    c, -36
-  ld    e, '='			; store '=' into e
-  call  color_bar
+  ld    e, ' '
+  call  print_char
 
-;
-;  ld    e, ' '
-;  call  print_char
-;
-;  call  color_bar_up        ; Draw color bars
-;  call  color_bar_down
-;
-;  ld    hl, 25              ; Set color 25
-;  call  set_color
-;
-;  ld    de, msg             ; Hello World!
-;  call  print_string
-;
-;  ld    e, ' '
-;  call  print_char
-;
-;  call  color_bar_up        ; Draw color bars
-;  call  color_bar_down
-;
-;  ld    e, "\n"
-;  call  print_char 
-;  ld    e, "\n"
-;  call  print_char
+  call  color_bar_up
+  call  color_bar_down
+
+  ld    hl, 25              ; Set color 25
+  call  set_color
+
+  ld    de, msg             ; Hello World!
+  call  print_string
+
+  ld    e, ' '
+  call  print_char
+
+  call  color_bar_up        ; Draw color bars
+  call  color_bar_down
+
+  ld    e, "\n"
+  call  print_char 
+  ld    e, "\n"
+  call  print_char
 
   call  reset_screen
   call  reset  
