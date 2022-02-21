@@ -73,7 +73,7 @@ print_char:
   call  BDOS
   ret
   
-  MACRO PRINT_CHAR ch
+  MACRO PUTC ch
     ld    e, ch
     call  print_char
   ENDM
@@ -85,7 +85,7 @@ print_string:
   call  BDOS
   ret
 
-  MACRO PRINT_STRING str_loc
+  MACRO PUTS str_loc
     ld    de, str_loc
     call  print_string
   ENDM
@@ -98,7 +98,7 @@ print_string:
 set_color:
   ld    ix, color_code+6
   call  hl_itoa
-  PRINT_STRING  color_code
+  PUTS  color_code
   ret
 
 ; ------------------------------------------------------------------------------
@@ -146,10 +146,10 @@ color_bar:
 ; Destroys
 ;    de
 set_up_screen:
-  PRINT_STRING  term_reset
-  PRINT_STRING  color_intense   ; Turn on color intensity
-  PRINT_STRING  back_black
-  PRINT_STRING  clrscrn
+  PUTS  term_reset
+  PUTS  color_intense   ; Turn on color intensity
+  PUTS  back_black
+  PUTS  clrscrn
   ret
 
 ; Reset the screen and colors
@@ -159,7 +159,7 @@ reset_screen:
   ld    hl, 60
   call  set_color           ; Reset color before exiting
 
-  PRINT_STRING  color_normal
+  PUTS  color_normal
   ret
 
 ; BDOS call to exit and return to CP
@@ -175,20 +175,20 @@ start:
   call  set_string_delimiter  ; $ is a dumb string delimiter, use 255
   call  set_up_screen
 
-  PRINT_CHAR  ' '
+  PUTC  ' '
   FULL_COLOR_BAR
 
-  ld    hl, 25              ; Set color 25
+  ld    hl, 25      ; Set color 25
   call  set_color
 
-  PRINT_STRING  msg         ; Hello World!
+  PUTS  msg         ; Hello World!
 
-  PRINT_CHAR  ' '
+  PUTC  ' '
   FULL_COLOR_BAR
 
-  PRINT_CHAR  "\n"
-  PRINT_CHAR  "\n"
+  PUTC  "\n"
+  PUTC  "\n"
 
   call  reset_screen
   call  reset  
-  halt                      ; This code is never reached
+  halt              ; This code is never reached
