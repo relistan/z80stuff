@@ -99,6 +99,15 @@ print_string:
 ;         1 = ending color
 ;         2 = increment
 ;         3 = character to draw
+
+; Wrappers to load up the right place from memory
+color_bar_up:
+  ld  iy, bar_up
+  jr  color_bar
+
+color_bar_down:
+  ld iy, bar_down
+
 color_bar:
   ld    a, (iy)
   sub   (iy+2)
@@ -117,15 +126,6 @@ color_bar:
   cp    b          ; compare a to 16
   jr    nz, .loop
   ret
-
-; Wrappers to load up the right place from memory
-color_bar_up:
-  ld  iy, bar_up
-  jr color_bar
-
-color_bar_down:
-  ld iy, bar_down
-  jr color_bar
 ; ------------------------------------------------------------------------------
 
 ; Set up the terminal screen
