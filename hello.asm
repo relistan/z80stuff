@@ -1,3 +1,4 @@
+; ------------------------------------------------------------------------------
 ; Fancy Hello world on CP/M with z80 assembly
 ;   -- requires a 256 color terminal, which should be no issue in 2022
 ; 
@@ -5,6 +6,7 @@
 ; Debugging: ZSID (http://www.retroarchive.org/cpm/lang/lang.htm)
 ;
 ; Karl Matthias -- 2022-02-19
+; ------------------------------------------------------------------------------
 
 BDOS  equ 5
 
@@ -25,7 +27,6 @@ back_black:     BYTE 27,"[48;5;0m",255
 back_white:     BYTE 27,"[48;5;15m",255
 color_intense:  BYTE 27,"[1m",255
 color_normal:   BYTE 27,"[0m",255
-; ------------------------------------------------------------------------------
 
 ; ------------------------------------------------------------------------------
 ; FUNCTIONS
@@ -119,6 +120,31 @@ color_bar_down:
   jr    nz, .loop
   ret
 
+; Draw a color bar at current position
+;	iy = block of args
+; 		0 = starting color
+; 		1 = increment
+; 		2 = ending color
+; 		3 = character to draw
+color_bar:
+  sub   c				; add -36 (sub)
+.loop:
+  add   c				; sub -36 (add)
+  ld    l, a			; store 196 into l
+  push  af				; push a and flags onto stack
+  push	bc
+  push	de
+  call  set_color		; set the color
+  pop	de
+  push	de
+  call  print_char		; print e
+  pop	de
+  pop	bc
+  pop   af				; restore a and flags
+  cp    b 				; compare a to 16
+  jr    nz, .loop
+  ret
+
 ; Set up the terminal screen
 ; Destroys
 ;	de
@@ -158,30 +184,37 @@ reset:
 ; ------------------------------------------------------------------------------
 start:
   call  set_string_delimiter  ; $ is a dumb string delimiter, use 255
-  call  set_up_screen
+;  call  set_up_screen
 
-  ld    e, ' '
-  call  print_char
+  ld    a, 196
+  ld    b, 16
+  ld    c, -36
+  ld    e, '='			; store '=' into e
+  call  color_bar
 
-  call  color_bar_up        ; Draw color bars
-  call  color_bar_down
-
-  ld    hl, 25              ; Set color 25
-  call  set_color
-
-  ld    de, msg             ; Hello World!
-  call  print_string
-
-  ld    e, ' '
-  call  print_char
-
-  call  color_bar_up        ; Draw color bars
-  call  color_bar_down
-
-  ld    e, "\n"
-  call  print_char 
-  ld    e, "\n"
-  call  print_char
+;
+;  ld    e, ' '
+;  call  print_char
+;
+;  call  color_bar_up        ; Draw color bars
+;  call  color_bar_down
+;
+;  ld    hl, 25              ; Set color 25
+;  call  set_color
+;
+;  ld    de, msg             ; Hello World!
+;  call  print_string
+;
+;  ld    e, ' '
+;  call  print_char
+;
+;  call  color_bar_up        ; Draw color bars
+;  call  color_bar_down
+;
+;  ld    e, "\n"
+;  call  print_char 
+;  ld    e, "\n"
+;  call  print_char
 
   call  reset_screen
   call  reset  
