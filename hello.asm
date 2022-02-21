@@ -59,18 +59,6 @@ hl_itoa:
   ld    (ix), a   ; store the value of a at address of ix
   ret
 
-; Sets the screen color by echoing an ANSI color code to the terminal
-; using the BDOS output routines.
-;
-; Destroys
-;   ix a de hl ix bc
-set_color:
-  ld    ix, color_code+6
-  call  hl_itoa
-  ld    de, color_code
-  call  print_string
-  ret
-
 ; BDOS call to set the string delimiter to 255 instead of '$'
 set_string_delimiter:
   ld    e, 255
@@ -84,12 +72,33 @@ print_char:
   ld    c, 2 
   call  BDOS
   ret
+  
+  MACRO PRINT_CHAR ch
+    ld    e, ch
+    call  print_char
+  ENDM
 
 ; BDOS call to print a string to console
 ; de must contain address of string, terminated with $
 print_string:
   ld    c, 9           ; CP/M write string to console call
   call  BDOS
+  ret
+
+  MACRO PRINT_STRING str_loc
+    ld    de, str_loc
+    call  print_string
+  ENDM
+
+; Sets the screen color by echoing an ANSI color code to the terminal
+; using the BDOS output routines.
+;
+; Destroys
+;   ix a de hl ix bc
+set_color:
+  ld    ix, color_code+6
+  call  hl_itoa
+  PRINT_STRING  color_code
   ret
 
 ; ------------------------------------------------------------------------------
@@ -132,17 +141,10 @@ color_bar:
 ; Destroys
 ;    de
 set_up_screen:
-  ld    de, term_reset
-  call  print_string
-
-  ld    de, color_intense   ; Turn on color intensity
-  call  print_string
-
-  ld    de, back_black
-  call  print_string
-
-  ld    de, clrscrn
-  call  print_string
+  PRINT_STRING  term_reset
+  PRINT_STRING  color_intense   ; Turn on color intensity
+  PRINT_STRING  back_black
+  PRINT_STRING  clrscrn
   ret
 
 ; Reset the screen and colors
@@ -152,8 +154,7 @@ reset_screen:
   ld    hl, 60
   call  set_color           ; Reset color before exiting
 
-  ld    de, color_normal
-  call  print_string
+  PRINT_STRING  color_normal
   ret
 
 ; BDOS call to exit and return to CP
@@ -169,8 +170,7 @@ start:
   call  set_string_delimiter  ; $ is a dumb string delimiter, use 255
   call  set_up_screen
 
-  ld    e, ' '
-  call  print_char
+  PRINT_CHAR  ' '
 
   call  color_bar_up
   call  color_bar_down
@@ -178,19 +178,14 @@ start:
   ld    hl, 25              ; Set color 25
   call  set_color
 
-  ld    de, msg             ; Hello World!
-  call  print_string
-
-  ld    e, ' '
-  call  print_char
+  PRINT_STRING  msg         ; Hello World!
+  PRINT_CHAR  ' '
 
   call  color_bar_up        ; Draw color bars
   call  color_bar_down
 
-  ld    e, "\n"
-  call  print_char 
-  ld    e, "\n"
-  call  print_char
+  PRINT_CHAR  "\n"
+  PRINT_CHAR  "\n"
 
   call  reset_screen
   call  reset  
