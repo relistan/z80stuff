@@ -27,6 +27,8 @@ back_black:     BYTE 27,"[48;5;0m",255
 back_white:     BYTE 27,"[48;5;15m",255
 color_intense:  BYTE 27,"[1m",255
 color_normal:   BYTE 27,"[0m",255
+cursor_hide:    BYTE 27,"[?25l",255
+cursor_show:    BYTE 27,"[?25h",255
 
 ; Color bar configuration
 bar_up:         BYTE 16,196,36,'=' 
@@ -147,6 +149,7 @@ color_bar:
 ;    de
 set_up_screen:
   PUTS  term_reset
+  PUTS  cursor_hide
   PUTS  color_intense   ; Turn on color intensity
   PUTS  back_black
   PUTS  clrscrn
@@ -160,6 +163,7 @@ reset_screen:
   call  set_color           ; Reset color before exiting
 
   PUTS  color_normal
+  PUTS  cursor_show
   ret
 
 ; BDOS call to exit and return to CP
