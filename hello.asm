@@ -122,7 +122,7 @@ color_bar:
   sub   (iy+2)
 .loop:
   add   (iy+2)     ; sub -36 (add)
-  push  af
+  push  af         ; preserve a, to be whacked by set_color
 
   ld    l, a       ; store 196 into l
   call  set_color  ; set the color
@@ -130,11 +130,16 @@ color_bar:
   ld    de, (iy+3) ; put '=' into e
   call  print_char ; print e
 
-  pop   af
+  pop   af         ; restore a
   ld    b, (iy+1)  ; put 16 into b
   cp    b          ; compare a to 16
   jr    nz, .loop
   ret
+
+  MACRO FULL_COLOR_BAR
+    call color_bar_up
+    call color_bar_down
+  ENDM
 ; ------------------------------------------------------------------------------
 
 ; Set up the terminal screen
@@ -171,18 +176,15 @@ start:
   call  set_up_screen
 
   PRINT_CHAR  ' '
-
-  call  color_bar_up
-  call  color_bar_down
+  FULL_COLOR_BAR
 
   ld    hl, 25              ; Set color 25
   call  set_color
 
   PRINT_STRING  msg         ; Hello World!
-  PRINT_CHAR  ' '
 
-  call  color_bar_up        ; Draw color bars
-  call  color_bar_down
+  PRINT_CHAR  ' '
+  FULL_COLOR_BAR
 
   PRINT_CHAR  "\n"
   PRINT_CHAR  "\n"
