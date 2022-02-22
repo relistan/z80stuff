@@ -1,23 +1,14 @@
 ; ------------------------------------------------------------------------------
-; Fancy Hello world on CP/M with z80 assembly
+; Terminal and color control routines for CP/M in Z80 assembly
 ;   -- requires a 256 color terminal, which should be no issue in 2022
-; 
-; Assembler: sjasmplus (https://github.com/z00m128/sjasmplus)
-; Debugging: ZSID (http://www.retroarchive.org/cpm/lang/lang.htm)
 ;
-; Karl Matthias -- 2022-02-19
+; Karl Matthias -- 2022-02-21
 ; ------------------------------------------------------------------------------
 
-BDOS  equ 5
-
-start:
-  org   0100h
-  jp    main
 
 ; ------------------------------------------------------------------------------
 ; DATA
 ; ------------------------------------------------------------------------------
-msg: BYTE ' Hello, World! ',255
 
 ; Color code will have the color segment overwritten when set_color
 ; is called.
@@ -144,82 +135,3 @@ color_bar:
     call color_bar_down
   ENDM
 ; ------------------------------------------------------------------------------
-
-; Move over a set number of spaces
-;   b = the number of spaces
-tab:
-.tab
-  exx
-  PUTC  ' '
-  exx
-  djnz .tab
-  ret
-
-  MACRO TAB_8
-    ld    b, 8
-    call  tab
-  ENDM
-	
-; Set up the terminal screen
-; Destroys
-;    de
-set_up_screen:
-  PUTS  term_reset
-  PUTS  cursor_hide
-  PUTS  color_intense   ; Turn on color intensity
-  PUTS  back_black
-  PUTS  clrscrn
-  ret
-
-; Reset the screen and colors
-; Destroys
-;     hl de
-reset_screen:
-  ld    hl, 60
-  call  set_color           ; Reset color before exiting
-
-  PUTS  color_normal
-  PUTS  cursor_show
-  ret
-
-; BDOS call to exit and return to CP
-; No args
-reset:
-  ld    c, 0                ; CP/M system reset call - shut down
-  call  BDOS
-  
-; ------------------------------------------------------------------------------
-; MAIN
-; ------------------------------------------------------------------------------
-main:
-  call  set_string_delimiter  ; $ is a dumb string delimiter, use 255
-  call  set_up_screen
-
-  TAB_8
-
-  FULL_COLOR_BAR
-  PUTC  "\r"
-  PUTC  "\n"
-
-  PUTC  ' '
-  call color_bar_up
-
-  ld    hl, 25      ; Set color 25
-  call  set_color
-
-  PUTS  msg         ; Hello World!
-
-  call color_bar_down
-  PUTC  "\r"
-  PUTC  "\n"
-
-  TAB_8
-
-  FULL_COLOR_BAR
-
-  PUTC  "\n"
-  PUTC  "\n"
-
-  call  reset_screen
-  call  reset  
-  halt              ; This code is never reached
