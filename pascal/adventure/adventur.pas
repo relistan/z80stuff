@@ -1,10 +1,10 @@
 {
-	<---> Dungeon Adventure game <--->
-	  Karl Matthias -- February 2022
+       <---> Dungeon Adventure game <--->
+         Karl Matthias -- February 2022
 
-	Find the treasure, kill the monsters, explore the dungeon.
+       Find the treasure, kill the monsters, explore the dungeon.
 
-	An adventure on CP/M 3.
+       An adventure on CP/M 3.
 }
 program Adventure;
 type
@@ -29,11 +29,11 @@ var
    GameTicks : Byte;
    Mobs      : Array[1..4] of Mob;
    Player    : Mob;
-   i         : Integer;
+   i         : Byte;
 
 procedure FadeOut;
 var
-   i : Integer;
+   i : Byte;
 begin
      gotoXY(30, 10);
      for i := 1 to 21 do
@@ -89,17 +89,17 @@ begin
      write(#27,'(0');
 end;
 
-procedure gotoXY(x, y : byte);
+procedure gotoXY(x, y : Byte);
 begin
      write(#27,'[',y,';',x,'H');
 end;
 
-function keyPressed : boolean;
+function keyPressed : Boolean;
 begin
      keyPressed := (BDos(6, $FE) <> 0); { Is there a keypress waiting? }
 end;
 
-function readChar : char;
+function readChar : Char;
 begin
      readChar := chr(BDos(6, $FF)); { Read a single character from console }
 end;
@@ -110,31 +110,33 @@ begin
     write(c);
 end;
 
-function Right(x, y : Integer) : Integer;
+function Right(x, y : Byte) : Byte;
 begin
      Right := x + 1;
      if (x > 79) or (Board[y][x] <> ' ') then Right := x;
 end;
 
-function Left(x : Integer; y : Integer) : Integer;
+function Left(x : Byte; y : Byte) : Byte;
 begin
      Left := x - 1;
      if (x <= 2) or (Board[y][x-2] <> ' ') then Left := x;
 end;
 
-function Up(x : Integer; y : Integer) : Integer;
+function Up(x : Byte; y : Byte) : Byte;
 begin
      Up := y - 1;
      if (y <= 2) or (Board[y-1][x-1] <> ' ') then Up := y;
 end;
 
-function Down(x : Integer; y : Integer) : Integer;
+function Down(x : Byte; y : Byte) : Byte;
 begin
      Down := y + 1;
      if (y >= 24) or (Board[y+1][x-1] <> ' ') then Down := y;
 end;
 
 procedure DrawHealth;
+var
+   i : Byte;
 begin
      { Draw Player health }
      gotoXY(10, 25);
@@ -213,12 +215,16 @@ begin
      WriteCharAt(80, 1, 'k');
      WriteCharAt(1, 25, 'm');
      WriteCharAt(80, 25, 'j');
+
+     { Draw the title }
+     gotoXY(45, 1);
+     Write(' <--> DUNGEON ADVENTURE <--> ');
 end;
 
 procedure DrawViewport;
 var
    x,y : Byte;
-   Xmin,Xmax,Ymin,Ymax,Xdraw,Ydraw : Byte;
+   Xmin,Xmax,Ymin,Ymax : Byte;
 const
      BlockColors: Array[1..9] of byte =
         (100, 101, 102, 106, 107, 108, 142, 143, 144);
@@ -226,19 +232,19 @@ const
 begin
      { Viewport window is 5x5 box around the player }
      case Player.LastMove of
-          1: begin
+          1: begin { Left }
                   Ymin := Player.Y - 2; Ymax := Player.Y + 2;
                   Xmin := Player.X - 2; Xmax := Player.X - 2;
              end;
-          2: begin
+          2: begin { Right }
                   Ymin := Player.Y - 2; Ymax := Player.Y +2;
                   Xmin := Player.X + 2; Xmax := Player.X + 2;
              end;
-          3: begin
+          3: begin { Up }
                   Ymin := Player.Y - 2; Ymax := Player.Y - 2;
                   Xmin := Player.X - 2; Xmax := Player.X + 2;
              end;
-          4: begin
+          4: begin { Down }
                   Ymin := Player.Y + 2; Ymax := Player.Y + 2;
                   Xmin := Player.X - 2; Xmax := Player.X + 2;
              end;
@@ -458,16 +464,38 @@ begin
      end;
 end;
 
+procedure MovePlayer(cmd : Char);
+begin
+     Player.OldX := Player.X;
+     Player.OldY := Player.Y;
+
+     case (cmd) of
+          'q' : Exit;
+          'h' : begin
+                     Player.X := Left(Player.X, Player.Y);
+                     Player.LastMove := 1;
+                end;
+          'l' : begin
+                     Player.X := Right(Player.X, Player.Y);
+                     Player.LastMove := 2;
+                end;
+          'k' : begin
+                     Player.Y := Up(Player.X, Player.Y);
+                     Player.LastMove := 3;
+                end;
+          'j' : begin
+                     Player.Y := Down(Player.X, Player.Y);
+                     Player.LastMove := 4;
+                end;
+          'x' : Attack;
+     end
+end;
+
 procedure GameLoop;
 var
    cmd : Char;
 
 begin
-
-
-     DrawHealth;
-     WriteCharAt(Player.X, Player.Y, 'X');
-     WriteCharAt(Mobs[1].X, Mobs[1].Y, 'R');
 
      while True do
      begin
@@ -478,31 +506,9 @@ begin
           if Player.HP <= 0 then
              Exit;
 
-          Player.OldX := Player.X;
-          Player.OldY := Player.Y;
-
+          { Main Activity }
           cmd := readChar;
-          case (cmd) of
-               'q' : Exit;
-               'h' : begin
-                          Player.X := Left(Player.X, Player.Y);
-                          Player.LastMove := 1;
-                     end;
-               'l' : begin
-                          Player.X := Right(Player.X, Player.Y);
-                          Player.LastMove := 2;
-                     end;
-               'k' : begin
-                          Player.Y := Up(Player.X, Player.Y);
-                          Player.LastMove := 3;
-                     end;
-               'j' : begin
-                          Player.Y := Down(Player.X, Player.Y);
-                          Player.LastMove := 4;
-                     end;
-               'x' : Attack;
-          end;
-
+          MovePlayer(cmd);
           CalculateTurn;
           Render;
 
@@ -538,6 +544,8 @@ begin
      SetupMobs;
      Map;
      DrawViewport;
+     DrawHealth;
+     WriteCharAt(Player.X, Player.Y, 'X');
 
      { Play }
      GameLoop;
@@ -555,4 +563,4 @@ begin
      Delay(1000);
      ResetScr;
      ClearScreen;
-end.
+end.
