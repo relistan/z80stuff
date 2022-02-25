@@ -25,6 +25,8 @@ Use the following controls:
 	j -> down
 
 	x -> attack!
+
+	q -> quit the game
 ```
 
 Copyright (c) 2022 Karl Matthias
