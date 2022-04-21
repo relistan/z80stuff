@@ -22,6 +22,7 @@ type
         MaxHP    : Byte;
         Hit      : Boolean;
         LastMove : Byte;
+        Gold     : Integer;
     end;
 
 var
@@ -35,14 +36,14 @@ procedure FadeOut;
 var
    i : Byte;
 begin
-     gotoXY(30, 10);
+     gotoXY(30, 19);
      for i := 1 to 21 do
      begin
           write('-');
           Delay(40);
      end;
 
-     gotoXY(30, 10);
+     gotoXY(30, 19);
      for i := 1 to 21 do
      begin
           write(' ');
@@ -72,18 +73,6 @@ begin
      write(#27,'[2J'); { Clear Screen }
 end;
 
-procedure Hello;
-begin
-     write(#27,'[?25l;');   { Turn off the cursor }
-     SetColor(208);    { Amber foreground }
-     SetBackground(0); { Black background }
-     write(#26,'[2m'); { Dim/Normal display mode }
-     ClearScreen;
-
-     gotoXY(30, 10);
-     writeln('Begin the Adventure!');
-end;
-
 procedure GraphicsMode;
 begin
      write(#27,'(0');
@@ -110,29 +99,106 @@ begin
     write(c);
 end;
 
+function ValidMove(x, y : Byte) : Boolean;
+begin
+     ValidMove := False;
+     case Board[y][x] of
+          ' ': ValidMove := True;
+          '$': ValidMove := True;
+     end;
+end;
+
 function Right(x, y : Byte) : Byte;
 begin
      Right := x + 1;
-     if (x > 79) or (Board[y][x] <> ' ') then Right := x;
+     if (x > 79) or not ValidMove(x, y) then Right := x;
 end;
 
 function Left(x : Byte; y : Byte) : Byte;
 begin
      Left := x - 1;
-     if (x <= 2) or (Board[y][x-2] <> ' ') then Left := x;
+     if (x <= 2) or not ValidMove(x-2, y) then Left := x;
 end;
 
 function Up(x : Byte; y : Byte) : Byte;
 begin
      Up := y - 1;
-     if (y <= 2) or (Board[y-1][x-1] <> ' ') then Up := y;
+     if (y <= 2) or not ValidMove(x-1, y-1) then Up := y;
 end;
 
 function Down(x : Byte; y : Byte) : Byte;
 begin
      Down := y + 1;
-     if (y >= 24) or (Board[y+1][x-1] <> ' ') then Down := y;
+     if (y >= 24) or not ValidMove(x-1, y+1) then Down := y;
 end;
+
+procedure Hello;
+var
+   x, y : Byte;
+begin
+     Write(#27,'[?25l;'); { Turn off the cursor }
+     SetBackground(0);    { Black background }
+     ClearScreen;
+
+     gotoXY(1, 4);
+     SetColor(172);
+     Write(
+        '        _____',#13#10,
+        '       |     \.--.--.-----.-----.-----.-----.-----.',#13#10,
+        '       |  --  |  |  |     |  _  |  -__|  _  |     |',#13#10,
+        '       |_____/|_____|__|__|___  |_____|_____|__|__|',#13#10,
+        '                          |_____|',#13#10
+     );
+     SetColor(214);
+     Write(
+        '            _______     __                     __',#13#10,
+        '           |   _   |.--|  |.--.--.-----.-----.|  |_.--.--.----.-----.',#13#10,
+        '           |       ||  _  ||  |  |  -__|     ||   _|  |  |   _|  -__|',#13#10,
+        '           |___|___||_____| \___/|_____|__|__||____|_____|__| |_____|',#13#10
+     );
+     Writeln('');
+     Writeln('');
+
+     SetColor(184);
+     Writeln('           Design and Code -- Karl Matthias -- Copyright (c) 2022 ');
+
+     GraphicsMode;
+
+     { draw the horizontal bars }
+     gotoXY(7, 3);
+     for x := 7 to 72 do
+     begin
+          write('q');
+     end;
+
+     gotoXY(7, 13);
+     for x := 7 to 72 do
+     begin
+          write('q');
+     end;
+
+     { draw the vertical bars }
+     for y := 4 to 13 do
+     begin
+          WriteCharAt(6, y, 'x');
+          WriteCharAt(73, y, 'x');
+     end;
+
+     { Draw the corners }
+     WriteCharAt(6, 3, 'l');
+     WriteCharAt(73, 3, 'k');
+     WriteCharAt(6, 13, 'm');
+     WriteCharAt(73, 13, 'j');
+
+     gotoXY(30, 19);
+     Delay(100);
+     SetColor(208);
+
+     Delay(750);
+
+     write(#27,'(B');    { Set back to normal mode }
+     Writeln('Begin the Adventure!');
+End;
 
 procedure DrawHealth;
 var
@@ -155,6 +221,14 @@ begin
              write(' ');
          end;
      SetColor(208);
+end;
+
+procedure DrawGold;
+begin
+     { Draw Player health }
+     gotoXY(50, 25);
+     SetColor(142);
+     write('GOLD ', Player.Gold, ' ');
 end;
 
 procedure Map;
@@ -188,7 +262,7 @@ begin
      Board[24] := 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$aaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
      GraphicsMode;
-     SetColor(220);             { Gold borders }
+     SetColor(220); { Gold borders }
 
      { draw the horizontal bars }
      gotoXY(2, 1);
@@ -230,6 +304,8 @@ const
         (100, 101, 102, 106, 107, 108, 142, 143, 144);
 
 begin
+     { I tried to make a data table here instead, but seems slower }
+
      { Viewport window is 5x5 box around the player }
      case Player.LastMove of
           1: begin { Left }
@@ -449,6 +525,7 @@ begin
                end;
           end;
      end;
+
 end;
 
 procedure SetupMobs;
@@ -464,13 +541,22 @@ begin
      end;
 end;
 
+procedure CheckGold;
+begin
+     if Board[Player.Y-1][Player.X-1] = '$' then
+     begin
+          Player.Gold := Player.Gold + 1;
+          DrawGold;
+          Board[Player.Y-1][Player.X-1] := ' ';
+     end;
+end;
+
 procedure MovePlayer(cmd : Char);
 begin
      Player.OldX := Player.X;
      Player.OldY := Player.Y;
 
      case (cmd) of
-          'q' : Exit;
           'h' : begin
                      Player.X := Left(Player.X, Player.Y);
                      Player.LastMove := 1;
@@ -488,8 +574,11 @@ begin
                      Player.LastMove := 4;
                 end;
           'x' : Attack;
-     end
+     end;
+
+     CheckGold;
 end;
+
 
 procedure GameLoop;
 var
@@ -508,7 +597,9 @@ begin
 
           { Main Activity }
           cmd := readChar;
+          if cmd = 'q' then Exit;
           MovePlayer(cmd);
+          
           CalculateTurn;
           Render;
 
@@ -533,6 +624,9 @@ begin
 
      { Initial Health Setup }
      Player.HP := 20; Player.MaxHP := 20;
+
+     { Gold Setup }
+     Player.Gold := 0;
 end;
 
 begin
@@ -540,6 +634,8 @@ begin
      Hello;
      Delay(1000);
      FadeOut;
+     Delay(500);
+     ClearScreen;
      SetupPlayer;
      SetupMobs;
      Map;
@@ -563,4 +659,4 @@ begin
      Delay(1000);
      ResetScr;
      ClearScreen;
-end.
+end.
